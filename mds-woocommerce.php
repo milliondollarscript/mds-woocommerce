@@ -1,20 +1,22 @@
 <?php
 /**
- * Plugin Name: Million Dollar Script WooCommerce Checkout
+ * Plugin Name: Million Dollar Script - WooCommerce Checkout
  * Plugin URI: https://milliondollarscript.com/extensions/woocommerce
  * Description: WooCommerce payment provider adapter for Million Dollar Script checkout and monetization extensions.
- * Version: 0.1.0
+ * Version: 1.0.0
  * Author: Million Dollar Script
  * Author URI: https://milliondollarscript.com
  * Text Domain: mds-woocommerce
  * Domain Path: /languages
  * Requires at least: 6.0
+ * Tested up to: 7.0.2
  * Requires PHP: 8.1
  * License: GPL-3.0+
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Requires Plugins: million-dollar-script, woocommerce
  *
  * Requires MDS: 3.0.0
+ * Requires MDS API: 1
  * Requires License: No
  * MDS Provides: payments.woocommerce commerce.woocommerce
  * MDS Requires: platform.core
@@ -24,17 +26,17 @@
  * MDS Minimum Security Level: api_key_read
  * MDS LLM Safe Actions: read_provider_status
  *
- * @package MDS\Extensions\WooCommerce
+ * @package MillionDollarScript\Extensions\WooCommerce
  */
 
-namespace MDS\Extensions\WooCommerce;
+namespace MillionDollarScript\Extensions\WooCommerce;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 if (!defined('MDS_WOOCOMMERCE_VERSION')) {
-    define('MDS_WOOCOMMERCE_VERSION', '0.1.0');
+    define('MDS_WOOCOMMERCE_VERSION', '1.0.0');
 }
 
 if (!defined('MDS_WOOCOMMERCE_FILE')) {
@@ -45,12 +47,18 @@ if (!defined('MDS_WOOCOMMERCE_PATH')) {
     define('MDS_WOOCOMMERCE_PATH', plugin_dir_path(__FILE__));
 }
 
+if (!defined('MDS_WOOCOMMERCE_URL')) {
+    define('MDS_WOOCOMMERCE_URL', plugin_dir_url(__FILE__));
+}
+
 if (!defined('MDS_WOOCOMMERCE_BASENAME')) {
     define('MDS_WOOCOMMERCE_BASENAME', plugin_basename(__FILE__));
 }
 
 function mds_woocommerce_core_active() {
-    return class_exists('\\MDS3\\Plugin') && defined('MDS3_VERSION') && class_exists('\\MDS3\\Commerce\\Payments');
+    return class_exists('\\MillionDollarScript\\Core\\Runtime')
+        && \MillionDollarScript\Core\Runtime::is_ready()
+        && class_exists('\\MillionDollarScript\\Commerce\\Payments');
 }
 
 function mds_woocommerce_woocommerce_active() {
@@ -63,11 +71,12 @@ function mds_woocommerce_ready() {
 
 function mds_woocommerce_load_files() {
     require_once MDS_WOOCOMMERCE_PATH . 'includes/Main.php';
+    require_once MDS_WOOCOMMERCE_PATH . 'includes/Admin.php';
 }
 
 function mds_woocommerce_missing_notice() {
     echo '<div class="notice notice-error"><p>';
-    echo '<strong>' . esc_html__('Million Dollar Script WooCommerce Checkout', 'mds-woocommerce') . '</strong>: ';
+    echo '<strong>' . esc_html__('Million Dollar Script - WooCommerce Checkout', 'mds-woocommerce') . '</strong>: ';
     echo esc_html__('This extension requires Million Dollar Script and WooCommerce to be installed and activated.', 'mds-woocommerce');
     echo '</p></div>';
 }
@@ -80,13 +89,14 @@ function mds_woocommerce_init() {
 
     mds_woocommerce_load_files();
     Main::init();
+    Admin::init();
 }
 
 function mds_woocommerce_activate() {
     if (!mds_woocommerce_ready()) {
         deactivate_plugins(MDS_WOOCOMMERCE_BASENAME);
         wp_die(
-            esc_html__('Million Dollar Script WooCommerce Checkout requires Million Dollar Script and WooCommerce to be installed and activated.', 'mds-woocommerce'),
+            esc_html__('Million Dollar Script - WooCommerce Checkout requires Million Dollar Script and WooCommerce to be installed and activated.', 'mds-woocommerce'),
             esc_html__('Plugin Activation Error', 'mds-woocommerce'),
             ['back_link' => true]
         );
@@ -102,9 +112,9 @@ function mds_woocommerce_activation_notice() {
 
     delete_transient('mds_woocommerce_activated');
     echo '<div class="notice notice-success is-dismissible"><p>';
-    echo '<strong>' . esc_html__('Million Dollar Script WooCommerce Checkout', 'mds-woocommerce') . '</strong>: ';
+    echo '<strong>' . esc_html__('Million Dollar Script - WooCommerce Checkout', 'mds-woocommerce') . '</strong>: ';
     echo esc_html__('WooCommerce is available as a Million Dollar Script payment provider.', 'mds-woocommerce');
-    echo ' <a href="' . esc_url(admin_url('admin.php?page=mds3-setup')) . '">' . esc_html__('Choose provider', 'mds-woocommerce') . '</a>';
+    echo ' <a href="' . esc_url(admin_url('admin.php?page=mds3-woocommerce')) . '">' . esc_html__('Review checkout setup', 'mds-woocommerce') . '</a>';
     echo '</p></div>';
 }
 

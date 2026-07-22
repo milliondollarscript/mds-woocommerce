@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "package": "mds-woocommerce",
+  "type": "extension",
+  "version": "1.0.0",
+  "channel": "main",
+  "title": "WooCommerce Checkout",
+  "docs": [
+    {
+      "id": "usage",
+      "title": "WooCommerce Checkout",
+      "file": "USAGE.md",
+      "audience": ["admin", "support", "developer"],
+      "topics": ["woocommerce", "checkout", "payments", "commerce"]
+    }
+  ]
+}

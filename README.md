@@ -1,4 +1,4 @@
-# Million Dollar Script WooCommerce Checkout
+# Million Dollar Script - WooCommerce Checkout
 
 WooCommerce payment provider adapter for Million Dollar Script.
 
@@ -9,6 +9,7 @@ WooCommerce payment provider adapter for Million Dollar Script.
 - Syncs WooCommerce paid, cancelled, failed, and refunded statuses back to Million Dollar Script.
 - Adds a Manage action to WooCommerce account orders when a Million Dollar Script manage URL is available.
 - Provides WooCommerce store currency to Million Dollar Script when WooCommerce is the active provider.
+- Provides an extension-owned checkout readiness screen for payment routing, pages, gateways, currency, HTTPS, and post-login behavior.
 
 ## Requirements
 
@@ -21,13 +22,21 @@ WooCommerce payment provider adapter for Million Dollar Script.
 
 1. Install and configure WooCommerce.
 2. Activate Million Dollar Script.
-3. Activate Million Dollar Script WooCommerce Checkout.
-4. Open Million Dollar Script -> Setup.
-5. Set Payment Provider to WooCommerce.
+3. Activate Million Dollar Script - WooCommerce Checkout.
+4. Open Million Dollar Script -> Extensions -> WooCommerce Checkout.
+5. Enable WooCommerce for new Million Dollar Script checkouts and resolve any readiness warnings.
 
-Monetization extensions should not call WooCommerce directly. They should call `MDS3\Commerce\Payments::create_checkout()` and let this adapter handle WooCommerce-specific orders and callbacks.
+Monetization extensions should not call WooCommerce directly. They should call `MillionDollarScript\Commerce\Payments::create_checkout()` and let this adapter handle WooCommerce-specific orders and callbacks.
 
 ## Changelog
+
+### 1.0.0
+
+- Production-ready Million Dollar Script WooCommerce checkout adapter.
+- Preserves Million Dollar Script customer email on registered and guest WooCommerce orders.
+- Adds customer Manage actions for linked WooCommerce orders when the current customer is allowed to manage the source Million Dollar Script order.
+- Syncs paid, failed, refunded, and cancelled WooCommerce statuses back to Million Dollar Script through the core payments API.
+- Reuses existing linked WooCommerce orders only when the stored payment source matches the Million Dollar Script source order.
 
 ### 0.1.0
 
