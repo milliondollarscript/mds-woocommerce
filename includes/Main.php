@@ -23,6 +23,11 @@ class Main {
      */
     private $initialized = false;
 
+    /**
+     * @var AutomaticRenewals|null
+     */
+    private $automatic_renewals = null;
+
     public static function instance() {
         if (null === self::$instance) {
             self::$instance = new self();
@@ -41,9 +46,11 @@ class Main {
         }
 
         $this->initialized = true;
+        $this->automatic_renewals = new AutomaticRenewals($this);
 
         add_filter('million-dollar-script/payment/provider/options', [$this, 'provider_options']);
         add_filter('million-dollar-script/payment/providers', [$this, 'providers']);
+        add_filter('million-dollar-script/payment/recurring/adapters', [$this, 'recurring_adapters']);
         add_action('woocommerce_order_status_processing', [$this, 'mark_paid']);
         add_action('woocommerce_order_status_completed', [$this, 'mark_paid']);
         add_action('woocommerce_payment_complete', [$this, 'mark_paid']);
@@ -58,6 +65,7 @@ class Main {
         add_action('million-dollar-script/setup/payment/provider/actions', [$this, 'setup_provider_actions'], 10, 2);
         add_filter('million-dollar-script/settings/field/schema', [$this, 'settings_field_schema'], 10, 2);
         add_filter('million-dollar-script/extension/onboarding/items', [$this, 'extension_onboarding_items']);
+        add_filter('wc_stripe_force_save_payment_method', [$this->automatic_renewals, 'force_stripe_payment_method_save'], 20, 2);
     }
 
     public function provider_options(array $options) {
@@ -79,6 +87,94 @@ class Main {
         ];
 
         return $providers;
+    }
+
+    public function recurring_adapters(array $adapters) {
+        if (!class_exists('\\MillionDollarScript\\Extensions\\Subscriptions\\Service')) {
+            return $adapters;
+        }
+
+        $capabilities = ['manual_renewal', 'guest_payment_link', 'renewal_orders'];
+        if ($this->automatic_renewals && $this->automatic_renewals->supported()) {
+            $capabilities[] = 'automatic_renewal';
+        }
+
+        $adapters['woocommerce'] = [
+            'id' => 'woocommerce',
+            'provider' => 'woocommerce',
+            'ready' => [$this, 'recurring_ready'],
+            'capabilities' => $capabilities,
+            'prepare_checkout' => [$this, 'prepare_recurring_checkout'],
+            'create_payment_link' => [$this, 'create_recurring_payment_link'],
+            'collect_cycle' => [$this, 'collect_recurring_cycle'],
+        ];
+
+        return $adapters;
+    }
+
+    public function recurring_ready() {
+        return $this->ready()
+            && class_exists('\\MillionDollarScript\\Extensions\\Subscriptions\\Service')
+            && \MillionDollarScript\Extensions\Subscriptions\Service::enabled();
+    }
+
+    public function prepare_recurring_checkout(array $transaction, array $billing) {
+        if (!$this->recurring_ready()) {
+            return new \WP_Error('mds_woocommerce_subscriptions_disabled', __('WooCommerce subscription checkout is disabled.', 'mds-woocommerce'));
+        }
+        $transaction['metadata']['subscription_id'] = absint($billing['subscription_id'] ?? 0);
+        $transaction['metadata']['billing_mode'] = 'recurring';
+
+        return $this->create_checkout($transaction);
+    }
+
+    public function create_recurring_payment_link(array $payload) {
+        $subscription = is_array($payload['subscription'] ?? null) ? $payload['subscription'] : [];
+        $cycle = is_array($payload['cycle'] ?? null) ? $payload['cycle'] : [];
+        if (!$this->recurring_ready() || empty($subscription['id']) || empty($cycle['id'])) {
+            return new \WP_Error('mds_woocommerce_renewal_invalid', __('The WooCommerce renewal request is incomplete.', 'mds-woocommerce'));
+        }
+
+        $checkout = $this->create_checkout([
+            'source' => 'mds-subscription-cycle',
+            'source_id' => absint($cycle['id']),
+            'payment_provider' => 'woocommerce',
+            'user_id' => absint($subscription['owner_user_id'] ?? 0),
+            'email' => sanitize_email((string) ($subscription['owner_email'] ?? '')),
+            'currency' => (string) ($cycle['currency'] ?? $subscription['currency'] ?? 'USD'),
+            'total' => (float) ($cycle['amount'] ?? 0),
+            'existing_provider_order_id' => absint($cycle['provider_order_id'] ?? 0),
+            'items' => [[
+                'name' => sprintf(__('Subscription renewal #%d', 'mds-woocommerce'), absint($cycle['sequence'] ?? 0)),
+                'amount' => (float) ($cycle['amount'] ?? 0),
+                'metadata' => [
+                    'subscription_id' => absint($subscription['id']),
+                    'cycle_id' => absint($cycle['id']),
+                ],
+            ]],
+            'metadata' => [
+                'subscription_id' => absint($subscription['id']),
+                'cycle_id' => absint($cycle['id']),
+                'idempotency_key' => sanitize_text_field((string) ($cycle['idempotency_key'] ?? '')),
+            ],
+        ]);
+        if (is_wp_error($checkout)) {
+            return $checkout;
+        }
+
+        return [
+            'status' => 'pending',
+            'provider_order_id' => (string) ($checkout['provider_order_id'] ?? ''),
+            'payment_url' => (string) ($checkout['checkout_url'] ?? ''),
+        ];
+    }
+
+    public function collect_recurring_cycle(array $payload) {
+        if (!$this->automatic_renewals) {
+            return $this->create_recurring_payment_link($payload);
+        }
+
+        return $this->automatic_renewals->collect($payload);
     }
 
     public function create_checkout(array $transaction, array $payload = []) {
@@ -120,6 +216,12 @@ class Main {
             $wc_order->update_meta_data('_mds3_payment_source', $source);
             $wc_order->update_meta_data('_mds3_payment_source_id', $source_id);
             $wc_order->update_meta_data('_mds3_payment_provider', 'woocommerce');
+            $metadata = is_array($transaction['metadata'] ?? null) ? $transaction['metadata'] : [];
+            foreach (['subscription_id', 'cycle_id', 'billing_mode', 'idempotency_key'] as $key) {
+                if (isset($metadata[$key]) && is_scalar($metadata[$key])) {
+                    $wc_order->update_meta_data('_mds3_' . $key, sanitize_text_field((string) $metadata[$key]));
+                }
+            }
 
             if ('mds-grid' === $source) {
                 $wc_order->update_meta_data('_mds3_order_id', $source_id);
@@ -452,7 +554,19 @@ class Main {
             'provider' => 'woocommerce',
             'provider_order_id' => absint($wc_order->get_id()),
             'provider_status' => method_exists($wc_order, 'get_status') ? sanitize_key((string) $wc_order->get_status()) : '',
+            'payment_method' => method_exists($wc_order, 'get_payment_method') ? sanitize_key((string) $wc_order->get_payment_method()) : '',
+            'transaction_id' => method_exists($wc_order, 'get_transaction_id') ? sanitize_text_field((string) $wc_order->get_transaction_id()) : '',
         ];
+
+        if ('mds-subscription-cycle' === $source) {
+            \MillionDollarScript\Core\Hooks::do(
+                'million-dollar-script/subscriptions/cycle/status',
+                $source_id,
+                'paid' === $status ? 'paid' : 'failed',
+                $context
+            );
+            return;
+        }
 
         if ('paid' === $status) {
             \MillionDollarScript\Commerce\Payments::mark_source_paid($source, $source_id, $context);

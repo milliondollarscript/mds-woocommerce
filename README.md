@@ -30,6 +30,12 @@ Monetization extensions should not call WooCommerce directly. They should call `
 
 ## Changelog
 
+### 1.1.0
+
+- Added provider-neutral recurring checkout and renewal-order support for the optional Subscriptions extension.
+- Added version-gated automatic renewal bridges for supported WooCommerce Stripe and PayPal Payments releases, with secure pay-for-order fallback.
+- Preserved subscription identifiers, billing context, idempotency keys, and reusable payment-method requirements on linked WooCommerce orders.
+
 ### 1.0.0
 
 - Production-ready Million Dollar Script WooCommerce checkout adapter.

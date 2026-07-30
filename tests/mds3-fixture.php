@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use MillionDollarScript\Extensions\WooCommerce\Admin;
+use MillionDollarScript\Extensions\WooCommerce\AutomaticRenewals;
 use MillionDollarScript\Extensions\WooCommerce\Main;
 use MillionDollarScript\Commerce\Payments;
 
@@ -27,6 +28,8 @@ wp_set_current_user(1);
 $main = Main::instance();
 $original_settings = get_option('mds3_settings', []);
 $original_settings = is_array($original_settings) ? $original_settings : [];
+$subscription_settings_option = 'mds_subscriptions_settings';
+$original_subscription_settings = get_option($subscription_settings_option, null);
 $created_order_ids = [];
 $status_events = [];
 $failures = [];
@@ -174,9 +177,104 @@ try {
 
     $cards = Admin::dashboard_card([]);
     $assert(!empty($cards['mds-woocommerce']['actions']) && false !== strpos((string) ($cards['mds-woocommerce']['actions'][0]['url'] ?? ''), 'page=mds3-woocommerce'), 'WooCommerce dashboard card should link to its extension-owned settings page.');
+
+    if (class_exists('\\MillionDollarScript\\Extensions\\Subscriptions\\Service')) {
+        $subscription_settings = is_array($original_subscription_settings) ? $original_subscription_settings : [];
+        $subscription_settings['enabled'] = true;
+        update_option($subscription_settings_option, $subscription_settings, false);
+
+        $adapters = Payments::recurring_adapters();
+        $adapter = $adapters['woocommerce'] ?? [];
+        $assert(in_array('manual_renewal', (array) ($adapter['capabilities'] ?? []), true), 'WooCommerce recurring checkout should always retain manual renewal links.');
+        $assert(is_callable($adapter['create_payment_link'] ?? null), 'WooCommerce recurring checkout should expose renewal-order creation.');
+
+        $initial_recurring = $main->prepare_recurring_checkout(
+            array_merge($transaction, [
+                'source_id' => $source_id + 2,
+                'existing_provider_order_id' => 0,
+            ]),
+            ['subscription_id' => 880001]
+        );
+        $initial_recurring_order_id = absint(is_array($initial_recurring) ? ($initial_recurring['provider_order_id'] ?? 0) : 0);
+        if ($initial_recurring_order_id) {
+            $created_order_ids[] = $initial_recurring_order_id;
+        }
+        $initial_recurring_order = $initial_recurring_order_id ? wc_get_order($initial_recurring_order_id) : null;
+        $assert(
+            $initial_recurring_order
+            && 'recurring' === (string) $initial_recurring_order->get_meta('_mds3_billing_mode')
+            && 880001 === absint($initial_recurring_order->get_meta('_mds3_subscription_id')),
+            'Initial recurring checkout should retain its subscription and billing-mode metadata.'
+        );
+
+        $cycle_payload = [
+            'subscription' => [
+                'id' => 880001,
+                'owner_user_id' => 0,
+                'owner_email' => 'recurring-fixture@example.test',
+                'currency' => get_woocommerce_currency(),
+                'metadata' => [],
+            ],
+            'cycle' => [
+                'id' => 880002,
+                'sequence' => 2,
+                'amount' => 8.75,
+                'currency' => get_woocommerce_currency(),
+                'idempotency_key' => 'fixture-recurring-cycle',
+            ],
+        ];
+        $renewal = $main->create_recurring_payment_link($cycle_payload);
+        $renewal_order_id = absint(is_array($renewal) ? ($renewal['provider_order_id'] ?? 0) : 0);
+        if ($renewal_order_id) {
+            $created_order_ids[] = $renewal_order_id;
+        }
+        $renewal_order = $renewal_order_id ? wc_get_order($renewal_order_id) : null;
+        $assert(
+            $renewal_order
+            && 'mds-subscription-cycle' === (string) $renewal_order->get_meta('_mds3_payment_source')
+            && 880002 === absint($renewal_order->get_meta('_mds3_payment_source_id')),
+            'A recurring cycle should create a source-linked WooCommerce renewal order.'
+        );
+
+        $cycle_payload['cycle']['provider_order_id'] = (string) $renewal_order_id;
+        $replayed = $main->create_recurring_payment_link($cycle_payload);
+        $assert($renewal_order_id === absint($replayed['provider_order_id'] ?? 0), 'Retrying a recurring cycle should reuse its WooCommerce order.');
+
+        $automatic = new AutomaticRenewals($main);
+        $assert(
+            $automatic->payment_method_save_required($initial_recurring_order_id),
+            'Initial recurring checkout should require a reusable payment method.'
+        );
+        $assert(
+            $automatic->payment_method_save_required($renewal_order_id),
+            'Subscription-cycle checkout should require a reusable payment method.'
+        );
+        if ($automatic->stripe_supported()) {
+            $assert(
+                $automatic->force_stripe_payment_method_save(false, $initial_recurring_order_id),
+                'Supported Stripe checkouts should save the initial recurring payment method.'
+            );
+            $assert(
+                $automatic->force_stripe_payment_method_save(false, $renewal_order_id),
+                'Supported Stripe checkouts should save the payment method for subscription-cycle orders.'
+            );
+        }
+        $fallback = $main->collect_recurring_cycle($cycle_payload);
+        $assert(
+            is_array($fallback)
+            && 'pending' === (string) ($fallback['status'] ?? '')
+            && $renewal_order_id === absint($fallback['provider_order_id'] ?? 0),
+            'Automatic collection without a supported saved method should fall back to the same manual renewal order.'
+        );
+    }
 } finally {
     remove_action('million-dollar-script/payment/source/status', $status_listener, 50);
     update_option('mds3_settings', $original_settings, false);
+    if (null === $original_subscription_settings) {
+        delete_option($subscription_settings_option);
+    } else {
+        update_option($subscription_settings_option, $original_subscription_settings, false);
+    }
     wp_set_current_user(1);
     foreach (array_reverse(array_unique(array_filter(array_map('absint', $created_order_ids)))) as $order_id) {
         $order = wc_get_order($order_id);

@@ -4,7 +4,7 @@ Tags: million dollar script, woocommerce, payments, checkout
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.1
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -23,6 +23,12 @@ Million Dollar Script - WooCommerce Checkout registers WooCommerce as a payment 
 5. Enable WooCommerce for new Million Dollar Script checkouts and resolve any readiness warnings.
 
 == Changelog ==
+
+= 1.1.0 =
+* Adds provider-neutral recurring checkout and renewal-order support for the optional Subscriptions extension.
+* Preserves subscription identifiers and billing context on WooCommerce orders.
+* Uses secure pay-for-order links when automatic collection is unavailable.
+* Saves reusable Stripe payment methods for supported initial recurring and renewal checkouts.
 
 = 1.0.0 =
 * Production-ready Million Dollar Script WooCommerce checkout adapter.

@@ -3,7 +3,7 @@
  * Plugin Name: Million Dollar Script - WooCommerce Checkout
  * Plugin URI: https://milliondollarscript.com/extensions/woocommerce
  * Description: WooCommerce payment provider adapter for Million Dollar Script checkout and monetization extensions.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Million Dollar Script
  * Author URI: https://milliondollarscript.com
  * Text Domain: mds-woocommerce
@@ -36,7 +36,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('MDS_WOOCOMMERCE_VERSION')) {
-    define('MDS_WOOCOMMERCE_VERSION', '1.0.0');
+    define('MDS_WOOCOMMERCE_VERSION', '1.1.0');
 }
 
 if (!defined('MDS_WOOCOMMERCE_FILE')) {
@@ -70,6 +70,7 @@ function mds_woocommerce_ready() {
 }
 
 function mds_woocommerce_load_files() {
+    require_once MDS_WOOCOMMERCE_PATH . 'includes/AutomaticRenewals.php';
     require_once MDS_WOOCOMMERCE_PATH . 'includes/Main.php';
     require_once MDS_WOOCOMMERCE_PATH . 'includes/Admin.php';
 }

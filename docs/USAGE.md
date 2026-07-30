@@ -58,6 +58,14 @@ Renewal links are created for eligible paid placements. A renewal keeps the orig
 
 If a renewal checkout says the order cannot be paid, check that the original Million Dollar Script order is eligible for renewal, the WooCommerce order exists, and the payment-provider extension is active.
 
+## Subscription Billing
+
+When the optional Subscriptions extension is active and enabled, WooCommerce Checkout can create the initial recurring order and a separate source-linked order for each billing cycle. One-time checkout remains unchanged when subscriptions are disabled or no compatible plan is active.
+
+Every gateway can use a secure WooCommerce pay-for-order link for renewal. Automatic collection is additionally available for explicitly supported WooCommerce Stripe and PayPal Payments versions when the previous paid order has a reusable payment method. Unknown gateway versions, guest PayPal purchases, missing tokens, and customer-authentication requirements fall back to the renewal payment link.
+
+Test the exact gateway and version combination before enabling subscription offers. Confirm initial checkout, saved payment method behavior, a successful renewal, a failed or authentication-required renewal, customer recovery, and period-end cancellation.
+
 ## Troubleshooting
 
 - If WooCommerce does not appear as a provider, install and activate both WooCommerce and this checkout extension.
