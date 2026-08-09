@@ -9,7 +9,8 @@
  * Text Domain: mds-woocommerce
  * Domain Path: /languages
  * Requires at least: 6.0
- * Tested up to: 7.0.2
+ * Tested up to: 7.0.3
+ * WC tested up to: 11.0.0
  * Requires PHP: 8.1
  * License: GPL-3.0+
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html

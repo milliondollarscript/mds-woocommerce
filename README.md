@@ -16,7 +16,7 @@ WooCommerce payment provider adapter for Million Dollar Script.
 - WordPress 6.0+
 - PHP 8.1+
 - Million Dollar Script 3.0+
-- WooCommerce
+- WooCommerce (certified with WooCommerce 11.0.0 on WordPress 7.0.3, including HPOS)
 
 ## Setup
 
@@ -35,6 +35,7 @@ Monetization extensions should not call WooCommerce directly. They should call `
 - Added provider-neutral recurring checkout and renewal-order support for the optional Subscriptions extension.
 - Added version-gated automatic renewal bridges for supported WooCommerce Stripe and PayPal Payments releases, with secure pay-for-order fallback.
 - Preserved subscription identifiers, billing context, idempotency keys, and reusable payment-method requirements on linked WooCommerce orders.
+- Certified HPOS, block and classic checkout rendering, linked-order lifecycle synchronization, and replay-safe renewal behavior with WooCommerce 11.0.0 on WordPress 7.0.3.
 
 ### 1.0.0
 
