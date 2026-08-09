@@ -165,7 +165,7 @@ final class Admin {
      *
      * @return array<int, string>
      */
-    private static function enabled_gateways() {
+    public static function enabled_gateways() {
         if (!function_exists('WC') || !WC() || !WC()->payment_gateways()) {
             return [];
         }
@@ -191,7 +191,7 @@ final class Admin {
      *
      * @return array<string, array<string, mixed>>
      */
-    private static function required_pages() {
+    public static function required_pages() {
         $definitions = [
             'checkout' => __('Checkout', 'mds-woocommerce'),
             'myaccount' => __('My account', 'mds-woocommerce'),

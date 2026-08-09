@@ -62,7 +62,8 @@ class Main {
         add_filter('million-dollar-script/account/url', [$this, 'account_url'], 10, 2);
         add_filter('million-dollar-script/checkout/landing/url', [$this, 'checkout_landing_url'], 10, 3);
         add_filter('woocommerce_login_redirect', [$this, 'login_redirect'], 10, 2);
-        add_action('million-dollar-script/setup/payment/provider/actions', [$this, 'setup_provider_actions'], 10, 2);
+        add_filter('million-dollar-script/setup/allowed-admin-pages', [$this, 'setup_allowed_admin_pages']);
+        add_filter('million-dollar-script/setup/payment/provider/readiness', [$this, 'setup_provider_readiness'], 10, 3);
         add_filter('million-dollar-script/settings/field/schema', [$this, 'settings_field_schema'], 10, 2);
         add_filter('million-dollar-script/extension/onboarding/items', [$this, 'extension_onboarding_items']);
         add_filter('wc_stripe_force_save_payment_method', [$this->automatic_renewals, 'force_stripe_payment_method_save'], 20, 2);
@@ -404,14 +405,88 @@ class Main {
         return $checkout_url ? esc_url_raw($checkout_url) : $url;
     }
 
-    public function setup_provider_actions($provider, array $settings) {
+    public function setup_allowed_admin_pages(array $pages) {
+        $pages[] = 'mds3-woocommerce';
+
+        return array_values(array_unique($pages));
+    }
+
+    public function setup_provider_readiness(array $readiness, $provider, array $settings) {
         unset($settings);
-        if ('woocommerce' !== $provider) {
-            return;
+        if ('woocommerce' !== sanitize_key((string) $provider)) {
+            return $readiness;
         }
 
-        echo '<p><a class="button" href="' . esc_url(admin_url('admin.php?page=wc-admin')) . '">' . esc_html__('Open WooCommerce setup', 'mds-woocommerce') . '</a></p>';
-        echo '<p><a class="button" href="' . esc_url(admin_url('admin.php?page=mds3-woocommerce')) . '">' . esc_html__('Review checkout readiness', 'mds-woocommerce') . '</a></p>';
+        $gateways = Admin::enabled_gateways();
+        $pages = Admin::required_pages();
+        $checkout_page_ready = !empty($pages['checkout']['published']);
+        $host = wp_parse_url(home_url('/'), PHP_URL_HOST);
+        $secure_checkout = is_ssl() || in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+        $review_url = admin_url('admin.php?page=mds3-woocommerce');
+
+        return [
+            'actions' => [
+                [
+                    'label' => __('Review checkout readiness', 'mds-woocommerce'),
+                    'url' => $review_url,
+                    'primary' => true,
+                ],
+                [
+                    'label' => __('Open WooCommerce setup', 'mds-woocommerce'),
+                    'url' => admin_url('admin.php?page=wc-admin'),
+                ],
+            ],
+            'items' => [
+                [
+                    'id' => 'woocommerce-plugin',
+                    'label' => __('WooCommerce plugin', 'mds-woocommerce'),
+                    'description' => __('Installed and active.', 'mds-woocommerce'),
+                    'ready' => true,
+                ],
+                [
+                    'id' => 'checkout-extension',
+                    'label' => __('Checkout extension', 'mds-woocommerce'),
+                    'description' => __('Selected, active, and connected to Million Dollar Script.', 'mds-woocommerce'),
+                    'ready' => true,
+                ],
+                [
+                    'id' => 'payment-routing',
+                    'label' => __('Payment routing', 'mds-woocommerce'),
+                    'description' => __('New Million Dollar Script checkouts use WooCommerce.', 'mds-woocommerce'),
+                    'ready' => true,
+                ],
+                [
+                    'id' => 'store-payments',
+                    'label' => __('Store payments', 'mds-woocommerce'),
+                    'description' => $gateways
+                        ? sprintf(
+                            /* translators: %s: enabled WooCommerce payment-method names. */
+                            __('Enabled methods: %s', 'mds-woocommerce'),
+                            implode(', ', $gateways)
+                        )
+                        : __('Enable at least one WooCommerce payment method.', 'mds-woocommerce'),
+                    'ready' => !empty($gateways),
+                ],
+                [
+                    'id' => 'checkout-page',
+                    'label' => __('Checkout page', 'mds-woocommerce'),
+                    'description' => $checkout_page_ready
+                        ? __('Published and assigned in WooCommerce.', 'mds-woocommerce')
+                        : __('Publish and assign the WooCommerce checkout page.', 'mds-woocommerce'),
+                    'ready' => $checkout_page_ready,
+                ],
+                [
+                    'id' => 'secure-checkout',
+                    'label' => __('Secure checkout', 'mds-woocommerce'),
+                    'description' => $secure_checkout
+                        ? __('HTTPS is available for checkout.', 'mds-woocommerce')
+                        : __('Enable HTTPS before accepting live payments.', 'mds-woocommerce'),
+                    'ready' => $secure_checkout,
+                ],
+            ],
+            'ready' => !empty($gateways) && $checkout_page_ready && $secure_checkout,
+            'review_url' => $review_url,
+        ];
     }
 
     /**

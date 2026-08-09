@@ -84,6 +84,15 @@ try {
 
     $onboarding = apply_filters('million-dollar-script/extension/onboarding/items', []);
     $assert(!empty($onboarding['mds-woocommerce']['actions']) && 2 === count($onboarding['mds-woocommerce']['legal_documents'] ?? []), 'WooCommerce onboarding should include setup actions and legal documents.');
+    $setup_allowed_pages = apply_filters('million-dollar-script/setup/allowed-admin-pages', ['mds3-setup', 'mds3-extensions']);
+    $assert(in_array('mds3-woocommerce', $setup_allowed_pages, true), 'WooCommerce checkout readiness should remain accessible before setup is finalized.');
+    $setup_readiness = apply_filters('million-dollar-script/setup/payment/provider/readiness', [], 'woocommerce', $original_settings);
+    $readiness_ids = array_map(static function ($item) {
+        return (string) ($item['id'] ?? '');
+    }, (array) ($setup_readiness['items'] ?? []));
+    $assert(false !== strpos((string) ($setup_readiness['review_url'] ?? ''), 'page=mds3-woocommerce'), 'WooCommerce setup review should link to the extension-owned readiness page.');
+    $assert(in_array('store-payments', $readiness_ids, true), 'WooCommerce setup readiness should report the enabled payment-method state.');
+    $assert(array_key_exists('ready', $setup_readiness), 'WooCommerce setup readiness should expose an aggregate completion state.');
     $field = $main->settings_field_schema([], 'woocommerce-login-redirect');
     $assert('url' === (string) ($field['type'] ?? '') && !empty($field['help']), 'WooCommerce login redirect should have a documented URL field schema.');
 
