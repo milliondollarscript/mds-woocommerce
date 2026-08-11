@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
             <p><?php esc_html_e('Connect Million Dollar Script purchases to WooCommerce checkout, payment gateways, taxes, currencies, and customer orders.', 'mds-woocommerce'); ?></p>
         </div>
         <div class="mds-woocommerce-header-actions">
+            <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=mds3-setup') . '#mds3-setup-commerce'); ?>"><?php esc_html_e('Return to setup', 'mds-woocommerce'); ?></a>
             <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=wc-admin')); ?>"><?php esc_html_e('Open WooCommerce', 'mds-woocommerce'); ?></a>
             <?php echo wp_kses_post(\MillionDollarScript\Extensions\Admin::docs_button('mds-woocommerce')); ?>
         </div>

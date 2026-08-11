@@ -27,6 +27,7 @@ Million Dollar Script - WooCommerce Checkout registers WooCommerce as a payment 
 
 = Unreleased =
 * Added opt-in uninstall cleanup through the core extension policy for adapter-owned settings and transients while deliberately retaining WooCommerce orders.
+* Added a direct return from checkout readiness to the Commerce step in the Million Dollar Script setup flow.
 
 = 1.1.0 =
 * Adds provider-neutral recurring checkout and renewal-order support for the optional Subscriptions extension.
