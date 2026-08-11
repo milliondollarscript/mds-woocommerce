@@ -123,6 +123,23 @@ function mds_woocommerce_activation_notice() {
 register_activation_hook(__FILE__, __NAMESPACE__ . '\\mds_woocommerce_activate');
 add_action('plugins_loaded', __NAMESPACE__ . '\\mds_woocommerce_init', 25);
 add_action('admin_notices', __NAMESPACE__ . '\\mds_woocommerce_activation_notice');
+add_action('million-dollar-script/register/extensions', static function(): void {
+    if (!class_exists('\\MillionDollarScript\\Extensions\\Registry')) {
+        return;
+    }
+    \MillionDollarScript\Extensions\Registry::register([
+        'id' => 'mds-woocommerce',
+        'name' => 'WooCommerce Checkout',
+        'description' => 'Use WooCommerce as a Million Dollar Script payment provider.',
+        'version' => MDS_WOOCOMMERCE_VERSION,
+        'main_file' => MDS_WOOCOMMERCE_FILE,
+        'premium' => false,
+        'license_required' => false,
+        'cleanup' => [
+            'description' => 'WooCommerce adapter activation state and extension preferences. WooCommerce orders remain intact.',
+        ],
+    ]);
+});
 add_action('init', function() {
     load_plugin_textdomain('mds-woocommerce', false, dirname(plugin_basename(__FILE__)) . '/languages');
 });
