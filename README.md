@@ -30,7 +30,7 @@ Monetization extensions should not call WooCommerce directly. They should call `
 
 ## Changelog
 
-### Unreleased
+### 1.1.1
 
 - Certified linked-order creation, payment completion, refunds, HPOS, and frontend requests with WooCommerce 11.0.1 on WordPress 7.0.3.
 
