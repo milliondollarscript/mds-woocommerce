@@ -55,6 +55,11 @@ try {
     $options = apply_filters('million-dollar-script/payment/provider/options', []);
     $providers = Payments::providers();
     $provider = $providers['woocommerce'] ?? null;
+    $features = wc_get_container()->get(Automattic\WooCommerce\Internal\Features\FeaturesController::class);
+    $compatibility = $features->get_compatible_features_for_plugin('mds-woocommerce/mds-woocommerce.php');
+    $compatible_features = (array) ($compatibility['compatible'] ?? []);
+    $assert(in_array('custom_order_tables', $compatible_features, true), 'The adapter should declare HPOS compatibility.');
+    $assert(in_array('cart_checkout_blocks', $compatible_features, true), 'The adapter should declare cart and checkout block compatibility.');
     $assert('WooCommerce' === (string) ($options['woocommerce'] ?? ''), 'WooCommerce should be available in payment provider options.');
     $assert(is_array($provider) && !empty($provider['ready']), 'WooCommerce provider should register as ready.');
     $assert(!empty($provider['locks_currency']) && is_callable($provider['create_checkout'] ?? null), 'WooCommerce provider should lock currency and expose checkout creation.');

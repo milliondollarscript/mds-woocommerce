@@ -3,7 +3,7 @@
  * Plugin Name: Million Dollar Script - WooCommerce Checkout
  * Plugin URI: https://milliondollarscript.com/extensions/woocommerce
  * Description: WooCommerce payment provider adapter for Million Dollar Script checkout and monetization extensions.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Author: Million Dollar Script
  * Author URI: https://milliondollarscript.com
  * Text Domain: mds-woocommerce
@@ -37,7 +37,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('MDS_WOOCOMMERCE_VERSION')) {
-    define('MDS_WOOCOMMERCE_VERSION', '1.1.1');
+    define('MDS_WOOCOMMERCE_VERSION', '1.1.2');
 }
 
 if (!defined('MDS_WOOCOMMERCE_FILE')) {
@@ -68,6 +68,20 @@ function mds_woocommerce_woocommerce_active() {
 
 function mds_woocommerce_ready() {
     return mds_woocommerce_core_active() && mds_woocommerce_woocommerce_active();
+}
+
+function mds_woocommerce_declare_feature_compatibility() {
+    if (!class_exists('\\Automattic\\WooCommerce\\Utilities\\FeaturesUtil')) {
+        return;
+    }
+
+    foreach (['custom_order_tables', 'cart_checkout_blocks'] as $feature) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+            $feature,
+            MDS_WOOCOMMERCE_FILE,
+            true
+        );
+    }
 }
 
 function mds_woocommerce_load_files() {
@@ -121,6 +135,7 @@ function mds_woocommerce_activation_notice() {
 }
 
 register_activation_hook(__FILE__, __NAMESPACE__ . '\\mds_woocommerce_activate');
+add_action('before_woocommerce_init', __NAMESPACE__ . '\\mds_woocommerce_declare_feature_compatibility');
 add_action('plugins_loaded', __NAMESPACE__ . '\\mds_woocommerce_init', 25);
 add_action('admin_notices', __NAMESPACE__ . '\\mds_woocommerce_activation_notice');
 add_action('million-dollar-script/register/extensions', static function(): void {
