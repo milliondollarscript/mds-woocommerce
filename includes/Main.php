@@ -294,17 +294,28 @@ class Main {
         if (!$wc_order || !method_exists($wc_order, 'get_meta')) {
             return $actions;
         }
-
-        $url = esc_url_raw((string) $wc_order->get_meta('_mds3_manage_url'));
-        if (!$url && class_exists('\\MillionDollarScript\\Commerce\\Payments')) {
-            $mds_order_id = absint($wc_order->get_meta('_mds3_order_id'));
-            if ($mds_order_id && $this->can_current_customer_manage($wc_order)) {
-                $order = \MillionDollarScript\Core\Orders::find($mds_order_id);
-                $url = $order ? \MillionDollarScript\Commerce\Payments::customer_manage_url_for_mds_order($order) : '';
-            }
+        if (!$this->can_current_customer_manage($wc_order)) {
+            return $actions;
         }
 
-        if ($url && $this->can_current_customer_manage($wc_order)) {
+        // Regenerate from the current site so the link always reflects the live
+        // host/port; a purchase-time snapshot can go stale if the site address
+        // changes. Fall back to the stored snapshot only when the MDS order is
+        // unavailable.
+        $url = '';
+        $mds_order_id = absint($wc_order->get_meta('_mds3_order_id'));
+        if ($mds_order_id && class_exists('\\MillionDollarScript\\Commerce\\Payments')) {
+            $order = \MillionDollarScript\Core\Orders::find($mds_order_id);
+            if ($order) {
+                $url = (string) \MillionDollarScript\Commerce\Payments::customer_manage_url_for_mds_order($order);
+            }
+        }
+        if (!$url) {
+            $url = (string) $wc_order->get_meta('_mds3_manage_url');
+        }
+        $url = esc_url_raw($url);
+
+        if ($url) {
             $actions['mds3_manage'] = [
                 'url' => esc_url($url),
                 'name' => __('Manage', 'mds-woocommerce'),
