@@ -16,7 +16,7 @@ WooCommerce payment provider adapter for Million Dollar Script.
 - WordPress 6.0+
 - PHP 8.1+
 - Million Dollar Script 3.0+
-- WooCommerce (certified with WooCommerce 11.1.0 on WordPress 7.0.4, including HPOS)
+- WooCommerce (certified with WooCommerce 11.1.0 on WordPress 7.1, including HPOS)
 
 ## Setup
 
@@ -36,7 +36,7 @@ Monetization extensions should not call WooCommerce directly. They should call `
 
 ### 1.1.1
 
-- Certified linked-order creation, payment completion, refunds, HPOS, and frontend requests with WooCommerce 11.1.0 on WordPress 7.0.4.
+- Certified linked-order creation, payment completion, refunds, HPOS, and frontend requests with WooCommerce 11.1.0 on WordPress 7.1.
 
 ### 1.1.0
 
