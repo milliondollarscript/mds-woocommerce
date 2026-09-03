@@ -3,7 +3,7 @@ Contributors: milliondollarscript
 Tags: million dollar script, woocommerce, payments, checkout
 Requires at least: 6.0
 Tested up to: 7.0.3
-WC tested up to: 11.0.1
+WC tested up to: 11.1.0
 Requires PHP: 8.1
 Stable tag: 1.1.2
 License: GPLv3 or later
@@ -31,7 +31,7 @@ Million Dollar Script - WooCommerce Checkout registers WooCommerce as a payment 
 = 1.1.1 =
 * Added opt-in uninstall cleanup through the core extension policy for adapter-owned settings and transients while deliberately retaining WooCommerce orders.
 * Added a direct return from checkout readiness to the Commerce step in the Million Dollar Script setup flow.
-* Certified linked-order creation, payment completion, refunds, HPOS, and frontend requests with WooCommerce 11.0.1 on WordPress 7.0.3.
+* Certified linked-order creation, payment completion, refunds, HPOS, and frontend requests with WooCommerce 11.1.0 on WordPress 7.0.4.
 
 = 1.1.0 =
 * Adds provider-neutral recurring checkout and renewal-order support for the optional Subscriptions extension.
