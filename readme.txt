@@ -25,6 +25,9 @@ Million Dollar Script - WooCommerce Checkout registers WooCommerce as a payment 
 
 == Changelog ==
 
+= 1.1.3 =
+* Certified compatibility with WooCommerce 11.1.2 and WordPress 7.1.2.
+
 = 1.1.2 =
 * Declared compatibility with WooCommerce HPOS and cart and checkout blocks after certifying both integration paths.
 
