@@ -5,7 +5,7 @@ Requires at least: 6.0
 Tested up to: 7.1
 WC tested up to: 11.1.2
 Requires PHP: 8.1
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -24,6 +24,9 @@ Million Dollar Script - WooCommerce Checkout registers WooCommerce as a payment 
 5. Enable WooCommerce for new Million Dollar Script checkouts and resolve any readiness warnings.
 
 == Changelog ==
+
+= 1.1.4 =
+* Each purchased block is now listed separately in the WooCommerce order, with the price per block shown in the line item.
 
 = 1.1.3 =
 * Certified compatibility with WooCommerce 11.1.2 and WordPress 7.1.2.
