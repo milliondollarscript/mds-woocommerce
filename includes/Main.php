@@ -197,11 +197,25 @@ class Main {
                 return $wc_order;
             }
 
+            $currency = $this->currency($transaction['currency'] ?? '');
             foreach ($this->items($transaction) as $item) {
                 $fee = new \WC_Order_Item_Fee();
-                $fee->set_name((string) ($item['name'] ?? __('Million Dollar Script item', 'mds-woocommerce')));
-                $fee->set_amount((float) ($item['amount'] ?? 0));
-                $fee->set_total((float) ($item['amount'] ?? 0));
+                $name = (string) ($item['name'] ?? __('Million Dollar Script item', 'mds-woocommerce'));
+                $total = (float) ($item['amount'] ?? 0);
+                $quantity = max(1, absint($item['quantity'] ?? 1));
+                $unit_price = isset($item['unit_price']) && is_numeric($item['unit_price']) ? (float) $item['unit_price'] : null;
+                if (null !== $unit_price && $quantity > 1) {
+                    // A WooCommerce fee line cannot carry a quantity, so the per-block
+                    // price has to ride in the name every surface renders.
+                    $name .= ' ' . sprintf(
+                        /* translators: %s: price of a single block */
+                        __('at %s per block', 'mds-woocommerce'),
+                        (function_exists('get_woocommerce_currency_symbol') ? get_woocommerce_currency_symbol($currency) : $currency . ' ') . number_format($unit_price, 2)
+                    );
+                }
+                $fee->set_name($name);
+                $fee->set_amount($total);
+                $fee->set_total($total);
                 foreach ((array) ($item['metadata'] ?? []) as $key => $value) {
                     if (is_scalar($value)) {
                         $fee->add_meta_data('_mds3_' . sanitize_key((string) $key), sanitize_text_field((string) $value), true);
@@ -212,7 +226,7 @@ class Main {
 
             $source = sanitize_key((string) ($transaction['source'] ?? ''));
             $source_id = absint($transaction['source_id'] ?? 0);
-            $wc_order->set_currency($this->currency($transaction['currency'] ?? ''));
+            $wc_order->set_currency($currency);
             $this->apply_customer_details($wc_order, $transaction);
             $wc_order->update_meta_data('_mds3_payment_source', $source);
             $wc_order->update_meta_data('_mds3_payment_source_id', $source_id);
