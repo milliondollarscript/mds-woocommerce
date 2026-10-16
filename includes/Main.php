@@ -656,6 +656,10 @@ class Main {
             'provider_status' => method_exists($wc_order, 'get_status') ? sanitize_key((string) $wc_order->get_status()) : '',
             'payment_method' => method_exists($wc_order, 'get_payment_method') ? sanitize_key((string) $wc_order->get_payment_method()) : '',
             'transaction_id' => method_exists($wc_order, 'get_transaction_id') ? sanitize_text_field((string) $wc_order->get_transaction_id()) : '',
+            // The amount the store was actually paid, so the core can compare it with what the
+            // order asked for instead of trusting that the two orders still match.
+            'provider_total' => method_exists($wc_order, 'get_total') ? (float) $wc_order->get_total() : null,
+            'provider_currency' => method_exists($wc_order, 'get_currency') ? sanitize_text_field((string) $wc_order->get_currency()) : '',
         ];
 
         if ('mds-subscription-cycle' === $source) {
