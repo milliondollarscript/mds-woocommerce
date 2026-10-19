@@ -95,6 +95,22 @@ if (!defined('ABSPATH')) {
                 </div>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=wc-settings&tab=checkout')); ?>"><?php esc_html_e('Manage', 'mds-woocommerce'); ?></a>
             </div>
+            <div class="mds-woocommerce-check-row">
+                <span class="dashicons dashicons-info" aria-hidden="true"></span>
+                <div>
+                    <strong><?php esc_html_e('Bank transfer, cheque, and cash on delivery', 'mds-woocommerce'); ?></strong>
+                    <span><?php esc_html_e('These orders wait in Million Dollar Script until you mark the WooCommerce order paid. Card and wallet methods complete on their own.', 'mds-woocommerce'); ?></span>
+                </div>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=wc-settings&tab=checkout')); ?>"><?php esc_html_e('Payment methods', 'mds-woocommerce'); ?></a>
+            </div>
+            <div class="mds-woocommerce-check-row">
+                <span class="dashicons dashicons-info" aria-hidden="true"></span>
+                <div>
+                    <strong><?php esc_html_e('Email confirmation at the pay screen', 'mds-woocommerce'); ?></strong>
+                    <span><?php echo 'yes' === (string) ($settings['woocommerce-verify-email-before-pay'] ?? 'no') ? esc_html__('Customers confirm the email on the order before they can pay it.', 'mds-woocommerce') : esc_html__('Customers go straight to payment from the grid. The link they arrive on carries the order credentials.', 'mds-woocommerce'); ?></span>
+                </div>
+                <a href="#mds-woocommerce-verify-email"><?php esc_html_e('Change', 'mds-woocommerce'); ?></a>
+            </div>
         </div>
     </section>
 
@@ -122,6 +138,14 @@ if (!defined('ABSPATH')) {
                 <label for="mds-woocommerce-login-redirect"><?php esc_html_e('After-login destination', 'mds-woocommerce'); ?></label>
                 <input id="mds-woocommerce-login-redirect" class="regular-text" type="url" name="woocommerce_login_redirect" value="<?php echo esc_attr((string) ($settings['woocommerce-login-redirect'] ?? '')); ?>" placeholder="<?php echo esc_attr(wc_get_page_permalink('myaccount')); ?>" />
                 <p class="description"><?php esc_html_e('Optional same-site URL for customers after WooCommerce login. Leave blank to keep the normal WooCommerce destination.', 'mds-woocommerce'); ?></p>
+            </div>
+            <div class="mds-woocommerce-field">
+                <label for="mds-woocommerce-verify-email"><?php esc_html_e('Confirm the email address before payment', 'mds-woocommerce'); ?></label>
+                <select id="mds-woocommerce-verify-email" name="woocommerce_verify_email_before_pay">
+                    <option value="no" <?php selected('yes' !== (string) ($settings['woocommerce-verify-email-before-pay'] ?? 'no')); ?>><?php esc_html_e('No - take the customer straight to payment', 'mds-woocommerce'); ?></option>
+                    <option value="yes" <?php selected('yes' === (string) ($settings['woocommerce-verify-email-before-pay'] ?? 'no')); ?>><?php esc_html_e('Yes - WooCommerce asks the customer to confirm it first', 'mds-woocommerce'); ?></option>
+                </select>
+                <p class="description"><?php esc_html_e('The address was given on the order page and the link from your grid already carries the order credentials, so this step is usually one confirmation too many.', 'mds-woocommerce'); ?></p>
             </div>
             <?php submit_button(__('Save checkout settings', 'mds-woocommerce')); ?>
         </form>

@@ -64,6 +64,7 @@ class Main {
         add_filter('woocommerce_login_redirect', [$this, 'login_redirect'], 10, 2);
         add_filter('million-dollar-script/setup/allowed-admin-pages', [$this, 'setup_allowed_admin_pages']);
         add_filter('million-dollar-script/setup/payment/provider/readiness', [$this, 'setup_provider_readiness'], 10, 3);
+        add_filter('woocommerce_order_email_verification_required', [$this, 'skip_email_confirmation_for_our_orders'], 10, 3);
         add_filter('million-dollar-script/settings/field/schema', [$this, 'settings_field_schema'], 10, 2);
         add_filter('million-dollar-script/extension/onboarding/items', [$this, 'extension_onboarding_items']);
         add_filter('wc_stripe_force_save_payment_method', [$this->automatic_renewals, 'force_stripe_payment_method_save'], 20, 2);
@@ -508,6 +509,20 @@ class Main {
                         : __('Enable HTTPS before accepting live payments.', 'mds-woocommerce'),
                     'ready' => $secure_checkout,
                 ],
+                [
+                    'id' => 'email-confirmation',
+                    'label' => __('Email confirmation at the pay screen', 'mds-woocommerce'),
+                    'description' => $this->settings_value('woocommerce-verify-email-before-pay', 'no')
+                        ? __('Customers confirm the email on the order before they can pay it. Turn this off in the checkout settings below if you would rather send them straight to payment.', 'mds-woocommerce')
+                        : __('Customers go straight to payment from the grid: the link they arrive on already carries the order credentials.', 'mds-woocommerce'),
+                    'ready' => true,
+                ],
+                [
+                    'id' => 'manual-methods',
+                    'label' => __('Bank transfer, cheque, and cash-on-delivery', 'mds-woocommerce'),
+                    'description' => __('An order paid this way waits in Million Dollar Script until you mark the WooCommerce order paid. Card and wallet methods complete on their own.', 'mds-woocommerce'),
+                    'ready' => true,
+                ],
             ],
             'ready' => !empty($gateways) && $checkout_page_ready && $secure_checkout,
             'review_url' => $review_url,
@@ -600,7 +615,55 @@ class Main {
             return $this->woocommerce_login_redirect_field();
         }
 
+        if ('woocommerce-verify-email-before-pay' === $key) {
+            return $this->woocommerce_verify_email_field();
+        }
+
         return $field;
+    }
+
+    /**
+     * A customer who reaches a WooCommerce pay screen straight from your grid holds two
+     * secrets in that link - the WooCommerce order key and the Million Dollar Script order
+     * key - and typed their email address moments earlier on the order page. WooCommerce
+     * then asks for a third. For orders this extension created, that step is a setting, and
+     * it is off by default: possession of the link is already the credential.
+     *
+     * @param bool             $required Whether WooCommerce wants the customer to confirm the email.
+     * @param \WC_Order|null   $order    The order being viewed or paid.
+     * @param string           $context  'order-pay' or 'order-received'.
+     * @return bool
+     */
+    public function skip_email_confirmation_for_our_orders($required, $order = null, $context = '') {
+        unset($context);
+        if (!$required || !is_a($order, '\\WC_Order')) {
+            return $required;
+        }
+
+        if ('yes' === $this->settings_value('woocommerce-verify-email-before-pay', 'no')) {
+            return $required;
+        }
+
+        if ('woocommerce' !== (string) $order->get_meta('_mds3_payment_provider')) {
+            return $required;
+        }
+
+        return false;
+    }
+
+    /**
+     * Read one of this extension's values out of the core settings row, with its default.
+     *
+     * @param string $key      Setting key.
+     * @param string $default  Value to use when the site has not chosen one.
+     * @return string
+     */
+    private function settings_value($key, $default = '') {
+        $settings = get_option('mds3_settings', []);
+        $settings = is_array($settings) ? $settings : [];
+        $value = (string) ($settings[$key] ?? $default);
+
+        return '' === $value ? $default : $value;
     }
 
     /**
@@ -842,6 +905,17 @@ class Main {
             'type' => 'url',
             'default' => '',
             'help' => __('Optional same-site URL WooCommerce customers are sent to after login.', 'mds-woocommerce'),
+        ];
+    }
+
+    private function woocommerce_verify_email_field() {
+        return [
+            'key' => 'woocommerce-verify-email-before-pay',
+            'label' => __('Confirm the Email Address Before Payment', 'mds-woocommerce'),
+            'type' => 'select',
+            'default' => 'no',
+            'options' => ['no', 'yes'],
+            'help' => __('When on, WooCommerce asks the customer to confirm the email on the order before showing the pay screen. Leave it off: the link from your grid already carries the order credentials, and the address was given on the order page.', 'mds-woocommerce'),
         ];
     }
 

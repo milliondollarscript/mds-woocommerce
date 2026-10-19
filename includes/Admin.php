@@ -99,6 +99,7 @@ final class Admin {
         $settings = get_option('mds3_settings', []);
         $settings = is_array($settings) ? $settings : [];
         $settings['woocommerce-login-redirect'] = esc_url_raw((string) wp_unslash($_POST['woocommerce_login_redirect'] ?? ''));
+        $settings['woocommerce-verify-email-before-pay'] = in_array((string) ($_POST['woocommerce_verify_email_before_pay'] ?? 'no'), ['yes', '1'], true) ? 'yes' : 'no';
 
         $use_woocommerce = !empty($_POST['use_woocommerce']);
         $active_provider = class_exists('\\MillionDollarScript\\Commerce\\Payments')
