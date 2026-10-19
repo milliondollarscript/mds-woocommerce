@@ -20,6 +20,7 @@ WooCommerce Checkout lets Million Dollar Script send pixel orders and extension 
 - WooCommerce is installed and active.
 - Million Dollar Script - WooCommerce Checkout is installed and active.
 - WooCommerce has at least one working payment method.
+- The store is public. WooCommerce sets a new store to **Coming soon**, which shows visitors a coming-soon page in place of the checkout. Set it under **WooCommerce -> Settings -> Site visibility**.
 - The Million Dollar Script payment provider is set to WooCommerce.
 
 The setup wizard can install WooCommerce from WordPress.org when you choose it as the payment provider. The Million Dollar Script - WooCommerce Checkout extension is installed through the extension catalog.
@@ -40,6 +41,12 @@ Disabling this option switches back to standalone checkout only when WooCommerce
 
 Enter an optional same-site URL for WooCommerce customers after login. Leave it blank to keep the normal WooCommerce destination. For security, redirects to hosts WordPress does not allow are rejected and WooCommerce keeps its default destination.
 
+### Email Confirmation at the Pay Screen
+
+WooCommerce can ask a visitor to type the email address on an order before it shows them the pay screen. Turn this off to send a customer from your grid straight to payment: the link they arrive on already carries the order credentials, and the address was supplied on the order page. It is off by default.
+
+Turn it on if you would rather WooCommerce confirm the address every time a pay link is opened. Orders created by other plugins and shop-created orders are not affected.
+
 ## Currency
 
 When WooCommerce is the active payment provider, Million Dollar Script follows WooCommerce currency behavior. If a multi-currency plugin changes the active store currency, prices displayed by Million Dollar Script should use the current provider currency instead of a hardcoded currency.
@@ -51,6 +58,14 @@ When WooCommerce is the active payment provider, Million Dollar Script follows W
 3. WooCommerce checkout opens for payment.
 4. A completed WooCommerce order marks the Million Dollar Script source order paid.
 5. The customer can manage uploads or extension-specific details from the manage link.
+
+## Payment Methods That Wait for You
+
+Card and wallet methods confirm payment while the customer is on the pay screen, and the Million Dollar Script order completes on its own.
+
+Bank transfer, cheque, and cash on delivery cannot confirm themselves. WooCommerce holds the order as **On hold** while the money arrives. The Million Dollar Script order stays open, and the placement is not published by the payment step. When the money is in, open the order in **WooCommerce -> Orders** and mark it **Processing** or **Completed**; the linked Million Dollar Script order then becomes paid and the placement follows the normal publication rules.
+
+A customer who starts a bank-transfer order and never pays leaves an open order in both systems. Cancel the WooCommerce order to close it.
 
 ## Renewals
 
