@@ -125,7 +125,7 @@ if (!defined('ABSPATH')) {
                 <span class="dashicons dashicons-info" aria-hidden="true"></span>
                 <div>
                     <strong><?php esc_html_e('Bank transfer, cheque, and cash on delivery', 'mds-woocommerce'); ?></strong>
-                    <span><?php esc_html_e('These orders wait in Million Dollar Script until you mark the WooCommerce order paid. Card and wallet methods complete on their own.', 'mds-woocommerce'); ?></span>
+                    <span><?php esc_html_e('These orders follow Auto-complete Manual Payments in Million Dollar Script settings: on, the ad goes live as soon as the order is placed; off, it waits until you mark the WooCommerce order paid.', 'mds-woocommerce'); ?></span>
                 </div>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=wc-settings&tab=checkout')); ?>"><?php esc_html_e('Payment methods', 'mds-woocommerce'); ?></a>
             </div>
