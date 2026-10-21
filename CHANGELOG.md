@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.1 - 2026-10-21
+- Corrected the version the plugin reports, so its listings, its assets, and its built-in documentation all name the installed build.
+
 ## 1.2.0 - 2026-10-21
 - A grid customer who chooses WooCommerce checkout now goes straight to payment, and the page they arrive on carries the order credentials.
 - An order paid by bank transfer, cheque, or cash on delivery follows the site's Auto-complete Manual Payments setting instead of always waiting for the site owner.

@@ -5,7 +5,7 @@ Requires at least: 6.0
 Tested up to: 7.1.3
 WC tested up to: 11.2.1
 Requires PHP: 8.1
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -24,6 +24,9 @@ Million Dollar Script - WooCommerce Checkout registers WooCommerce as a payment 
 5. Enable WooCommerce for new Million Dollar Script checkouts and resolve any readiness warnings.
 
 == Changelog ==
+
+= 1.2.1 =
+* Corrected the version the plugin reports, so its listings, its assets, and its built-in documentation all name the installed build.
 
 = 1.2.0 =
 * A grid customer who chooses WooCommerce checkout now goes straight to payment, and the page they arrive on carries the order credentials.
