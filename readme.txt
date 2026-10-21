@@ -5,7 +5,7 @@ Requires at least: 6.0
 Tested up to: 7.1.3
 WC tested up to: 11.2.1
 Requires PHP: 8.1
-Stable tag: 1.1.4
+Stable tag: 1.2.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -24,6 +24,13 @@ Million Dollar Script - WooCommerce Checkout registers WooCommerce as a payment 
 5. Enable WooCommerce for new Million Dollar Script checkouts and resolve any readiness warnings.
 
 == Changelog ==
+
+= 1.2.0 =
+* A grid customer who chooses WooCommerce checkout now goes straight to payment, and the page they arrive on carries the order credentials.
+* An order paid by bank transfer, cheque, or cash on delivery follows the site's Auto-complete Manual Payments setting instead of always waiting for the site owner.
+* When WooCommerce itself is holding a store back - a Coming soon store, or no payment method switched on - the checkout screens name the setting and link straight to it.
+* The order record shows the amount the store was actually paid.
+* Tested with WordPress 7.1.3 and WooCommerce 11.2.1, and the plugin states the exact versions it was tested with, so WordPress and WooCommerce no longer report it as untested on a current site.
 
 = 1.1.4 =
 * Each purchased block is now listed separately in the WooCommerce order, with the price per block shown in the line item.
