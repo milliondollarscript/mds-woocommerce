@@ -527,25 +527,48 @@ class Main {
         }
 
         $gateways = Admin::enabled_gateways();
+        $coming_soon = Admin::store_visibility_coming_soon();
         $pages = Admin::required_pages();
         $checkout_page_ready = !empty($pages['checkout']['published']);
         $host = wp_parse_url(home_url('/'), PHP_URL_HOST);
         $secure_checkout = is_ssl() || in_array($host, ['localhost', '127.0.0.1', '::1'], true);
         $review_url = admin_url('admin.php?page=mds3-woocommerce');
 
-        return [
-            'actions' => [
-                [
-                    'label' => __('Review checkout readiness', 'mds-woocommerce'),
-                    'url' => $review_url,
-                    'primary' => true,
-                ],
-                [
-                    'label' => __('Open WooCommerce setup', 'mds-woocommerce'),
-                    'url' => admin_url('admin.php?page=wc-admin'),
-                ],
+        $actions = [
+            [
+                'label' => __('Review checkout readiness', 'mds-woocommerce'),
+                'url' => $review_url,
+                'primary' => true,
             ],
+            [
+                'label' => __('Open WooCommerce setup', 'mds-woocommerce'),
+                'url' => admin_url('admin.php?page=wc-admin'),
+            ],
+        ];
+        if ($coming_soon) {
+            $actions[] = [
+                'label' => __('Open site visibility', 'mds-woocommerce'),
+                'url' => admin_url('admin.php?page=wc-settings&tab=site-visibility'),
+            ];
+        }
+        if (!$gateways) {
+            $actions[] = [
+                'label' => __('Enable a payment method', 'mds-woocommerce'),
+                'url' => admin_url('admin.php?page=wc-settings&tab=checkout'),
+            ];
+        }
+
+        return [
+            'actions' => $actions,
             'items' => [
+                [
+                    'id' => 'store-open',
+                    'label' => __('Store open to visitors', 'mds-woocommerce'),
+                    'description' => $coming_soon
+                        ? __('WooCommerce is showing a Coming soon page, so a customer cannot reach checkout. Set Site visibility to Live.', 'mds-woocommerce')
+                        : __('The store is open, so a customer can reach checkout.', 'mds-woocommerce'),
+                    'ready' => !$coming_soon,
+                ],
                 [
                     'id' => 'woocommerce-plugin',
                     'label' => __('WooCommerce plugin', 'mds-woocommerce'),
@@ -603,11 +626,11 @@ class Main {
                 [
                     'id' => 'manual-methods',
                     'label' => __('Bank transfer, cheque, and cash-on-delivery', 'mds-woocommerce'),
-                    'description' => __('An order paid this way waits in Million Dollar Script until you mark the WooCommerce order paid. Card and wallet methods complete on their own.', 'mds-woocommerce'),
+                    'description' => __('Card and wallet methods complete on their own. For bank transfer, cheque, and cash on delivery the outcome is set by Auto-complete Manual Payments in Million Dollar Script settings: on, the ad goes live as soon as the order is placed; off, it waits until the WooCommerce order is marked paid.', 'mds-woocommerce'),
                     'ready' => true,
                 ],
             ],
-            'ready' => !empty($gateways) && $checkout_page_ready && $secure_checkout,
+            'ready' => !empty($gateways) && $checkout_page_ready && $secure_checkout && !$coming_soon,
             'review_url' => $review_url,
         ];
     }

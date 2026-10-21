@@ -387,6 +387,48 @@ try {
     }
 }
 
+/**
+ * A store that WooCommerce itself is still holding back has to be reported that way.
+ *
+ * A fresh WooCommerce install ships in Coming soon mode with no payment method enabled. Neither
+ * is a Million Dollar Script setting, so the readiness answer and the actions it offers must point
+ * at WooCommerce instead of leaving a site owner to work out why nothing can be paid for.
+ */
+$coming_soon_option = 'woocommerce_coming_soon';
+$previous_coming_soon = get_option($coming_soon_option, null);
+
+update_option($coming_soon_option, 'yes');
+$assert(Admin::store_visibility_coming_soon(), 'WooCommerce Coming soon mode was not detected.');
+$held_back = $main->setup_provider_readiness([], 'woocommerce', []);
+$assert(!$held_back['ready'], 'Checkout was reported ready while WooCommerce was showing a Coming soon page.');
+$held_items = array_column($held_back['items'], null, 'id');
+$assert(
+    isset($held_items['store-open']) && !$held_items['store-open']['ready'],
+    'A store behind a Coming soon page was not listed as blocked.'
+);
+$assert(
+    false !== strpos(implode('|', array_column($held_back['actions'], 'url')), 'site-visibility'),
+    'No way to reach WooCommerce site visibility was offered while the store was held back.'
+);
+$assert(
+    false !== strpos((string) ($held_items['manual-methods']['description'] ?? ''), 'Auto-complete Manual Payments'),
+    'The bank-transfer guidance does not name the setting that decides what happens to those orders.'
+);
+
+update_option($coming_soon_option, 'no');
+$assert(!Admin::store_visibility_coming_soon(), 'A live store was reported as being held back.');
+$open = array_column($main->setup_provider_readiness([], 'woocommerce', [])['items'], null, 'id');
+$assert(
+    isset($open['store-open']) && $open['store-open']['ready'],
+    'A store that is open to visitors was reported as blocked.'
+);
+
+if (null === $previous_coming_soon) {
+    delete_option($coming_soon_option);
+} else {
+    update_option($coming_soon_option, $previous_coming_soon);
+}
+
 if ($failures) {
     fwrite(STDERR, "WooCommerce Checkout fixture failed:\n- " . implode("\n- ", $failures) . "\n");
     exit(1);

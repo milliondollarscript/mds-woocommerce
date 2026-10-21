@@ -64,6 +64,24 @@ if (!defined('ABSPATH')) {
         </div>
     </section>
 
+    <?php if ($coming_soon || !$enabled_gateways) : ?>
+        <div class="notice notice-warning inline">
+            <p><strong><?php esc_html_e('WooCommerce needs one more step before an ad can be paid for.', 'mds-woocommerce'); ?></strong></p>
+            <?php if ($coming_soon) : ?>
+                <p>
+                    <?php esc_html_e('A new WooCommerce store starts in Coming soon mode. Set WooCommerce → Settings → Site visibility to Live so customers can reach checkout.', 'mds-woocommerce'); ?>
+                    <a href="https://woocommerce.com/document/configuring-woocommerce-settings/coming-soon-mode" target="_blank" rel="noopener noreferrer"><?php esc_html_e('WooCommerce: Coming soon mode', 'mds-woocommerce'); ?></a>
+                </p>
+            <?php endif; ?>
+            <?php if (!$enabled_gateways) : ?>
+                <p>
+                    <?php esc_html_e('Enable at least one payment method under WooCommerce → Settings → Payments. Bank transfer, cheque and cash on delivery work as well as card providers: with those, the ad goes live when you accept the order.', 'mds-woocommerce'); ?>
+                    <a href="https://woocommerce.com/document/premium-payment-gateway-extensions" target="_blank" rel="noopener noreferrer"><?php esc_html_e('WooCommerce: choosing a payment method', 'mds-woocommerce'); ?></a>
+                </p>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
     <section class="mds-woocommerce-readiness" aria-labelledby="mds-woocommerce-readiness-title">
         <div class="mds-woocommerce-section-heading">
             <div>
@@ -94,6 +112,14 @@ if (!defined('ABSPATH')) {
                     <span><?php echo $enabled_gateways ? esc_html(implode(', ', $enabled_gateways)) : esc_html__('No payment methods are enabled.', 'mds-woocommerce'); ?></span>
                 </div>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=wc-settings&tab=checkout')); ?>"><?php esc_html_e('Manage', 'mds-woocommerce'); ?></a>
+            </div>
+            <div class="mds-woocommerce-check-row">
+                <span class="dashicons <?php echo $coming_soon ? 'dashicons-warning' : 'dashicons-yes-alt'; ?>" aria-hidden="true"></span>
+                <div>
+                    <strong><?php esc_html_e('Store visibility', 'mds-woocommerce'); ?></strong>
+                    <span><?php echo $coming_soon ? esc_html__('WooCommerce is showing a Coming soon page, so customers cannot reach checkout.', 'mds-woocommerce') : esc_html__('The store is open to visitors.', 'mds-woocommerce'); ?></span>
+                </div>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=wc-settings&tab=site-visibility')); ?>"><?php esc_html_e('Manage', 'mds-woocommerce'); ?></a>
             </div>
             <div class="mds-woocommerce-check-row">
                 <span class="dashicons dashicons-info" aria-hidden="true"></span>

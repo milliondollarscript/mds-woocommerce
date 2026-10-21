@@ -19,8 +19,8 @@ WooCommerce Checkout lets Million Dollar Script send pixel orders and extension 
 
 - WooCommerce is installed and active.
 - Million Dollar Script - WooCommerce Checkout is installed and active.
-- WooCommerce has at least one working payment method.
-- The store is public. WooCommerce sets a new store to **Coming soon**, which shows visitors a coming-soon page in place of the checkout. Set it under **WooCommerce -> Settings -> Site visibility**.
+- WooCommerce has at least one working payment method. Nothing else can be paid for until one is turned on: [choosing a payment method](https://woocommerce.com/document/premium-payment-gateway-extensions).
+- The store is public. WooCommerce sets a new store to **Coming soon**, which shows visitors a coming-soon page in place of the checkout. Set it under **WooCommerce -> Settings -> Site visibility**: [Coming soon mode](https://woocommerce.com/document/configuring-woocommerce-settings/coming-soon-mode).
 - The Million Dollar Script payment provider is set to WooCommerce.
 
 The setup wizard can install WooCommerce from WordPress.org when you choose it as the payment provider. The Million Dollar Script - WooCommerce Checkout extension is installed through the extension catalog.
@@ -63,7 +63,11 @@ When WooCommerce is the active payment provider, Million Dollar Script follows W
 
 Card and wallet methods confirm payment while the customer is on the pay screen, and the Million Dollar Script order completes on its own.
 
-Bank transfer, cheque, and cash on delivery cannot confirm themselves. WooCommerce holds the order as **On hold** while the money arrives. The Million Dollar Script order stays open, and the placement is not published by the payment step. When the money is in, open the order in **WooCommerce -> Orders** and mark it **Processing** or **Completed**; the linked Million Dollar Script order then becomes paid and the placement follows the normal publication rules.
+Bank transfer, cheque, and cash on delivery cannot confirm themselves. WooCommerce holds the order as **On hold** while the money arrives.
+
+With **Auto-complete Manual Payments** turned on (**Million Dollar Script -> Settings -> Orders**), the Million Dollar Script order completes as soon as the WooCommerce order is created, and the placement follows the normal publication rules. The order in your shop stays **On hold** until you record the money. This is the setting to use when you take payment outside the checkout - by transfer, cheque, or invoice - and you do not want to approve each order by hand.
+
+With it off, the Million Dollar Script order stays open and the placement is not published by the payment step. When the money is in, open the order in **WooCommerce -> Orders** and mark it **Processing** or **Completed**; the linked Million Dollar Script order then becomes paid and the placement follows the normal publication rules. A grid that asks you to review each order still holds the ad back, and an order with nothing to pay is never left waiting.
 
 A customer who starts a bank-transfer order and never pays leaves an open order in both systems. Cancel the WooCommerce order to close it.
 
@@ -84,6 +88,8 @@ Test the exact gateway and version combination before enabling subscription offe
 ## Troubleshooting
 
 - If WooCommerce does not appear as a provider, install and activate both WooCommerce and this checkout extension.
+- If a customer can add an ad to an order but never reaches checkout, the store is probably still in **Coming soon** mode, which a new WooCommerce install turns on by itself. Set **WooCommerce -> Settings -> Site visibility** to **Live**. WooCommerce explains what that mode does at [Coming soon mode](https://woocommerce.com/document/configuring-woocommerce-settings/coming-soon-mode).
+- If the pay screen offers nothing to pay with, no payment method is enabled. Turn one on under **WooCommerce -> Settings -> Payments** - card providers, and bank transfer, cheque, and cash on delivery all work. See [choosing a payment method](https://woocommerce.com/document/premium-payment-gateway-extensions).
 - If the checkout status says **Needs attention**, open the WooCommerce Checkout extension page and resolve the payment-provider, payment-method, page, or HTTPS item shown there.
 - If checkout opens but payment callbacks do not update the placement, check WooCommerce order status and scheduled actions.
 - If the wrong currency appears, confirm the store currency and any active multi-currency plugin behavior.

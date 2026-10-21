@@ -76,6 +76,7 @@ final class Admin {
         $currency_code = $main->currency_code((string) ($settings['currency'] ?? 'USD'));
         $currency_symbol = $main->currency_symbol((string) ($settings['currency-symbol'] ?? '$'));
         $enabled_gateways = self::enabled_gateways();
+        $coming_soon = self::store_visibility_coming_soon();
         $pages = self::required_pages();
         $is_local = in_array(wp_parse_url(home_url('/'), PHP_URL_HOST), ['localhost', '127.0.0.1', '::1'], true);
         $secure_checkout = is_ssl() || $is_local;
@@ -166,6 +167,23 @@ final class Admin {
      *
      * @return array<int, string>
      */
+    /**
+     * Whether WooCommerce is holding the store pages behind its Coming soon page.
+     *
+     * A freshly installed WooCommerce turns this on, and while it is on a visitor never reaches
+     * checkout - so an ad that ought to be payable cannot be paid for, and nothing in Million
+     * Dollar Script is at fault. This is reported, not worked around.
+     *
+     * @return bool
+     */
+    public static function store_visibility_coming_soon() {
+        if (!function_exists('WC') || !WC()) {
+            return false;
+        }
+
+        return 'yes' === (string) get_option('woocommerce_coming_soon', 'no');
+    }
+
     public static function enabled_gateways() {
         if (!function_exists('WC') || !WC() || !WC()->payment_gateways()) {
             return [];
