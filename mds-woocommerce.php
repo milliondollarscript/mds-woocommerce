@@ -37,7 +37,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('MDS_WOOCOMMERCE_VERSION')) {
-    define('MDS_WOOCOMMERCE_VERSION', '1.1.4');
+    define('MDS_WOOCOMMERCE_VERSION', '1.2.0');
 }
 
 if (!defined('MDS_WOOCOMMERCE_FILE')) {
