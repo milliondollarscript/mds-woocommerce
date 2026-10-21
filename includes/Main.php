@@ -57,6 +57,7 @@ class Main {
         add_action('woocommerce_order_status_cancelled', [$this, 'mark_cancelled']);
         add_action('woocommerce_order_status_failed', [$this, 'mark_cancelled']);
         add_action('woocommerce_order_status_refunded', [$this, 'mark_cancelled']);
+        add_action('woocommerce_order_status_on-hold', [$this, 'accept_manual_payment']);
         add_filter('woocommerce_my_account_my_orders_actions', [$this, 'my_account_order_actions'], 10, 2);
         add_filter('user_has_cap', [$this, 'grant_mds_order_payment_capability'], 20, 3);
         add_filter('million-dollar-script/account/url', [$this, 'account_url'], 10, 2);
@@ -282,6 +283,88 @@ class Main {
     public function mark_cancelled($wc_order_id) {
         $wc_order = function_exists('wc_get_order') ? wc_get_order($wc_order_id) : null;
         $this->sync_source_status($wc_order_id, $this->mds_status_for_wc_order($wc_order));
+    }
+
+    /**
+     * Take a Million Dollar Script order forward when the shop has stopped waiting for a gateway
+     * to confirm the money.
+     *
+     * Bank transfer, cheque and payment on collection put the shop's order at on-hold and leave
+     * it there - no gateway is ever going to report the payment, so an order that only moves when
+     * a gateway speaks is an order that never moves. Whether the ad may run anyway is the site's
+     * decision, not this plugin's: its manual-payments setting, each grid's own review setting,
+     * the order's total, and whether this customer is allowed to order without paying. All four
+     * answers live in the core, so the question is asked there. The shop's own order stays at
+     * on-hold until someone records the money.
+     */
+    public function accept_manual_payment($wc_order_id) {
+        if (!$this->ready() || !method_exists('\MillionDollarScript\Commerce\Payments', 'accept_manual_payment')) {
+            return;
+        }
+
+        $wc_order = function_exists('wc_get_order') ? wc_get_order($wc_order_id) : null;
+        if (!$wc_order) {
+            return;
+        }
+
+        $method = method_exists($wc_order, 'get_payment_method') ? sanitize_key((string) $wc_order->get_payment_method()) : '';
+        if ('' === $method || !in_array($method, $this->offline_payment_methods(), true)) {
+            return;
+        }
+
+        $link = $this->source_link_for_order($wc_order);
+        if ('' === $link['source'] || !$link['source_id']) {
+            return;
+        }
+
+        \MillionDollarScript\Commerce\Payments::accept_manual_payment($link['source'], $link['source_id'], $link['context']);
+    }
+
+    /**
+     * Which payment methods mean "the money arrives later, outside the gateway".
+     *
+     * These are the methods WooCommerce itself ships that leave an order on-hold. Someone taking
+     * payment by invoice, or by an offline gateway of their own, adds its method slug through this
+     * filter instead of editing this file.
+     *
+     * @return string[]
+     */
+    private function offline_payment_methods(): array {
+        $methods = apply_filters('million-dollar-script/woocommerce/offline-payment-methods', ['bacs', 'cheque', 'cod']);
+
+        return array_values(array_unique(array_map('strval', (array) $methods)));
+    }
+
+    /**
+     * Which Million Dollar Script record this shop order belongs to, and what the shop says about
+     * the money. Both directions of the bridge need the same answer, and a second copy of the same
+     * meta lookups is a second chance to get it wrong.
+     *
+     * @return array{source:string,source_id:int,context:array}
+     */
+    private function source_link_for_order($wc_order): array {
+        $source = sanitize_key((string) $wc_order->get_meta('_mds3_payment_source'));
+        $source_id = absint($wc_order->get_meta('_mds3_payment_source_id'));
+        if (!$source && absint($wc_order->get_meta('_mds3_order_id'))) {
+            $source = 'mds-grid';
+            $source_id = absint($wc_order->get_meta('_mds3_order_id'));
+        }
+
+        return [
+            'source' => $source,
+            'source_id' => $source_id,
+            'context' => [
+                'provider' => 'woocommerce',
+                'provider_order_id' => absint($wc_order->get_id()),
+                'provider_status' => method_exists($wc_order, 'get_status') ? sanitize_key((string) $wc_order->get_status()) : '',
+                'payment_method' => method_exists($wc_order, 'get_payment_method') ? sanitize_key((string) $wc_order->get_payment_method()) : '',
+                'transaction_id' => method_exists($wc_order, 'get_transaction_id') ? sanitize_text_field((string) $wc_order->get_transaction_id()) : '',
+                // The amount the store was actually paid, so the core can compare it with what the
+                // order asked for instead of trusting that the two orders still match.
+                'provider_total' => method_exists($wc_order, 'get_total') ? (float) $wc_order->get_total() : null,
+                'provider_currency' => method_exists($wc_order, 'get_currency') ? sanitize_text_field((string) $wc_order->get_currency()) : '',
+            ],
+        ];
     }
 
     public function complete_source_order(array $order) {
@@ -703,27 +786,13 @@ class Main {
             return;
         }
 
-        $source = sanitize_key((string) $wc_order->get_meta('_mds3_payment_source'));
-        $source_id = absint($wc_order->get_meta('_mds3_payment_source_id'));
-        if (!$source && absint($wc_order->get_meta('_mds3_order_id'))) {
-            $source = 'mds-grid';
-            $source_id = absint($wc_order->get_meta('_mds3_order_id'));
-        }
+        $link = $this->source_link_for_order($wc_order);
+        $source = $link['source'];
+        $source_id = $link['source_id'];
+        $context = $link['context'];
         if (!$source || !$source_id) {
             return;
         }
-
-        $context = [
-            'provider' => 'woocommerce',
-            'provider_order_id' => absint($wc_order->get_id()),
-            'provider_status' => method_exists($wc_order, 'get_status') ? sanitize_key((string) $wc_order->get_status()) : '',
-            'payment_method' => method_exists($wc_order, 'get_payment_method') ? sanitize_key((string) $wc_order->get_payment_method()) : '',
-            'transaction_id' => method_exists($wc_order, 'get_transaction_id') ? sanitize_text_field((string) $wc_order->get_transaction_id()) : '',
-            // The amount the store was actually paid, so the core can compare it with what the
-            // order asked for instead of trusting that the two orders still match.
-            'provider_total' => method_exists($wc_order, 'get_total') ? (float) $wc_order->get_total() : null,
-            'provider_currency' => method_exists($wc_order, 'get_currency') ? sanitize_text_field((string) $wc_order->get_currency()) : '',
-        ];
 
         if ('mds-subscription-cycle' === $source) {
             \MillionDollarScript\Core\Hooks::do(

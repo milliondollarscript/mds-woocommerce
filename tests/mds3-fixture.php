@@ -189,6 +189,95 @@ try {
     $assert(home_url('/explicit-account/') === $main->account_url(home_url('/explicit-account/'), ['account-page' => home_url('/explicit-account/')]), 'An explicit Million Dollar Script account page should retain priority.');
     $assert(wc_get_checkout_url() === $main->checkout_landing_url(home_url('/fallback-checkout/'), ['payment_provider' => 'woocommerce'], home_url('/')), 'WooCommerce should provide the checkout landing URL when selected.');
 
+    // A shop order paid by bank transfer stops waiting for a confirmation that will never arrive.
+    // What this extension is responsible for is the plumbing: notice which payment method the shop
+    // was paid by, find the Million Dollar Script record the shop order belongs to, and ask the
+    // core whether that record may go ahead. Whether it may is the core's decision, not this one -
+    // and the shop's own order stays where it is until someone records the money.
+    if (class_exists('\MillionDollarScript\V3\Orders\OrderRepository')) {
+        global $wpdb;
+        $manual_orders = new \MillionDollarScript\V3\Orders\OrderRepository();
+        $manual_settings_baseline = get_option('mds3_settings', []);
+        $manual_settings_baseline = is_array($manual_settings_baseline) ? $manual_settings_baseline : [];
+        $manual_made = [];
+
+        $make_grid_order = static function () use ($manual_orders, &$manual_made) {
+            $created = $manual_orders->create([], [
+                'email' => 'bank-transfer@example.test',
+                'status' => 'pending_payment',
+                'total' => 42.00,
+                'currency' => get_woocommerce_currency(),
+                'commerce_provider' => 'woocommerce',
+            ]);
+            if (is_wp_error($created) || !absint($created)) {
+                return 0;
+            }
+            $manual_made[] = absint($created);
+
+            return absint($created);
+        };
+
+        $make_shop_order = static function ($grid_order_id, $payment_method) use (&$created_order_ids) {
+            $shop_order = wc_create_order();
+            if (is_wp_error($shop_order)) {
+                return null;
+            }
+            $fee = new \WC_Order_Item_Fee();
+            $fee->set_name('One million dollar block');
+            $fee->set_amount(42.00);
+            $fee->set_total(42.00);
+            $shop_order->add_item($fee);
+            $shop_order->set_payment_method($payment_method);
+            $shop_order->update_meta_data('_mds3_payment_source', 'mds-grid');
+            $shop_order->update_meta_data('_mds3_payment_source_id', absint($grid_order_id));
+            $shop_order->calculate_totals(false);
+            $shop_order->set_status('on-hold');
+            $shop_order->save();
+            $created_order_ids[] = absint($shop_order->get_id());
+
+            return $shop_order;
+        };
+
+        $set_manual_choice = static function ($choice) use ($manual_settings_baseline) {
+            $settings = $manual_settings_baseline;
+            $settings['auto-approve'] = $choice;
+            update_option('mds3_settings', $settings, false);
+        };
+
+        $held_order = $make_grid_order();
+        $held_shop = $held_order ? $make_shop_order($held_order, 'bacs') : null;
+        $set_manual_choice('no');
+        $main->accept_manual_payment(absint($held_shop->get_id()));
+        $assert('pending_payment' === (string) ($manual_orders->find($held_order)['status'] ?? ''), 'A site that reviews manual payments let a bank-transfer ad go live.');
+        $assert(null !== $held_shop && $held_shop->has_status('on-hold'), 'Recording an unpaid bank transfer completed the shop order as well.');
+
+        $accepted_order = $make_grid_order();
+        $accepted_shop = $accepted_order ? $make_shop_order($accepted_order, 'bacs') : null;
+        $set_manual_choice('yes');
+        $main->accept_manual_payment(absint($accepted_shop->get_id()));
+        $accepted_state = $manual_orders->find($accepted_order);
+        $assert('paid' === (string) ($accepted_state['status'] ?? ''), 'A site that accepts manual payments left a bank-transfer order waiting forever.');
+        $assert('site_accepts_manual' === (string) (json_decode((string) ($accepted_state['metadata'] ?? ''), true)['paid_without_gateway_confirmation'] ?? ''), 'The order does not record that the site accepted payment outside the gateway.');
+        $assert($accepted_shop->has_status('on-hold'), 'The shop order was completed on the strength of a promise to pay.');
+
+        $card_order = $make_grid_order();
+        $card_shop = $card_order ? $make_shop_order($card_order, 'stripe') : null;
+        $main->accept_manual_payment(absint($card_shop->get_id()));
+        $assert('pending_payment' === (string) ($manual_orders->find($card_order)['status'] ?? ''), 'A card payment held for capture was treated as money already in.');
+
+        $unlinked_shop = $make_shop_order(0, 'bacs');
+        $main->accept_manual_payment(absint($unlinked_shop->get_id()));
+        $assert(true, 'A shop order that belongs to nothing should be left alone without error.');
+
+        update_option('mds3_settings', $manual_settings_baseline, false);
+        if (class_exists('\MillionDollarScript\V3\Support\DB')) {
+            foreach ($manual_made as $manual_id) {
+                $wpdb->delete(\MillionDollarScript\V3\Support\DB::table('order_items'), ['order_id' => $manual_id]);
+                $wpdb->delete(\MillionDollarScript\V3\Support\DB::table('orders'), ['id' => $manual_id]);
+            }
+        }
+    }
+
     $cards = Admin::dashboard_card([]);
     $assert(!empty($cards['mds-woocommerce']['actions']) && false !== strpos((string) ($cards['mds-woocommerce']['actions'][0]['url'] ?? ''), 'page=mds3-woocommerce'), 'WooCommerce dashboard card should link to its extension-owned settings page.');
 
