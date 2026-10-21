@@ -2,7 +2,7 @@
 Contributors: milliondollarscript
 Tags: million dollar script, woocommerce, payments, checkout
 Requires at least: 6.0
-Tested up to: 7.1
+Tested up to: 7.1.3
 WC tested up to: 11.2.1
 Requires PHP: 8.1
 Stable tag: 1.1.4
